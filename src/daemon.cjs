@@ -51,6 +51,7 @@ const {
 const pino = require("pino");
 const qrcode = require("qrcode-terminal");
 const dailyLog = require("./memory/daily-log.cjs");
+const orchestrator = require("./orchestrator.cjs");
 
 // ── Config ──────────────────────────────────────────────────────────
 
@@ -978,6 +979,7 @@ end tell`;
         try { process.kill(ppid, "SIGTERM"); killed = true; } catch {}
       }
       try { process.kill(s.pid, "SIGTERM"); } catch {}
+      orchestrator.wipeSession(sid);
       lines.push(`${killed ? "🔪" : "⚠️"} ${s.number ? `${s.number} ` : ""}[${s.tag}] pid=${s.pid}${ppid ? ` ppid=${ppid}` : ""}`);
     }
     await sock.sendMessage(jid, { text: lines.join("\n") });
@@ -1154,6 +1156,43 @@ end tell`;
     }
   }
 
+  // No explicit prefix matched — let the orchestrator decide. The classifier
+  // can either route to a specific terminal (overriding sticky active) or
+  // answer the message itself as YACA. Falls through to active on error.
+  if (!targets.length) {
+    try {
+      const decision = await orchestrator.classify({
+        text: content,
+        sessions,
+        lastActiveId: activeSessionId,
+        jid,
+      });
+      if (decision.action === "answer") {
+        const replyText = `[YACA] ${decision.reply}`;
+        let sentId = null;
+        try {
+          const sent = await sock.sendMessage(jid, { text: replyText });
+          sentId = sent?.key?.id || null;
+        } catch (e) { log(`YACA self-answer send failed: ${e.message}`); }
+        orchestrator.record(jid, { dir: "in", text: content });
+        orchestrator.record(jid, { dir: "out", session_id: "yaca", text: decision.reply });
+        dailyLog.appendInbound({ root: STATE_DIR, chat_id: jid, user: senderNumber, content, meta });
+        dailyLog.appendOutbound({ root: STATE_DIR, chat_id: jid, tag: "YACA", text: decision.reply, message_id: sentId });
+        log(`YACA self-answered: ${decision.reply.slice(0, 60)}`);
+        return;
+      }
+      if (decision.action === "route" && decision.target_session_id && sessions.has(decision.target_session_id)) {
+        targets = [decision.target_session_id];
+        meta.route_smart = "true";
+        content = decision.clean || content;
+        routedBy = "smart";
+        activeSessionId = decision.target_session_id;
+      }
+    } catch (e) {
+      log(`smart-route failed: ${e.message}`);
+    }
+  }
+
   if (!targets.length) {
     if (activeSessionId && sessions.has(activeSessionId)) {
       targets = [activeSessionId];
@@ -1183,6 +1222,7 @@ end tell`;
 
   log(`inbound routed via ${routedBy} → ${targets.length} session(s): ${text.slice(0, 60)}`);
   dailyLog.appendInbound({ root: STATE_DIR, chat_id: jid, user: senderNumber, content, meta });
+  orchestrator.record(jid, { dir: "in", text: content });
   for (const sid of targets) {
     const session = sessions.get(sid);
     if (!session?.socket) continue;
@@ -1262,6 +1302,7 @@ async function handleReply(sessionId, { chat_id, text, reply_to, files }) {
     lastSentId = sent?.key?.id || null;
     if (lastSentId) trackOutbound(lastSentId, sessionId);
     dailyLog.appendOutbound({ root: STATE_DIR, chat_id, tag: outTag, text, message_id: lastSentId });
+    orchestrator.record(chat_id, { dir: "out", session_id: sessionId, text });
   }
   for (const f of files) {
     const ext = path.extname(f).toLowerCase();
