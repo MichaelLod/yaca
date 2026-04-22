@@ -1,0 +1,29 @@
+{
+  "name": "yaca",
+  "version": "0.1.0",
+  "description": "Yet Another Cloud Agent — minimal, WhatsApp-first Claude Code agent.",
+  "license": "MIT",
+  "bin": {
+    "yaca-daemon": "./src/daemon.cjs",
+    "yaca-session": "./src/mcp-client.cjs",
+    "yaca-pair": "./src/pair.cjs"
+  },
+  "scripts": {
+    "daemon": "node src/daemon.cjs",
+    "session": "node src/mcp-client.cjs",
+    "pair": "node src/pair.cjs",
+    "install-agent": "bash scripts/install.sh"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@whiskeysockets/baileys": "7.0.0-rc.9",
+    "link-preview-js": "^3.0.0",
+    "pino": "^9.0.0",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
+    "zod": "^3.22.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

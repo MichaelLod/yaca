@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "yaca": {
+      "command": "node",
+      "args": ["/ABSOLUTE/PATH/TO/YACA/src/mcp-client.cjs"]
+    }
+  }
+}

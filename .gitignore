@@ -1,0 +1,16 @@
+node_modules/
+package-lock.json
+bun.lock
+*.log
+.DS_Store
+
+# Per-host MCP config — each clone writes its own
+.mcp.json
+
+# Local secrets
+.env
+.env.local
+.env.*.local
+
+# Session handover notes
+HANDOVER.md

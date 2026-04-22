@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  launchd plist for YACA daemon.
+
+  Install (use scripts/install.sh for auto-substitution, or edit by hand):
+    1. Copy to ~/Library/LaunchAgents/com.yaca.daemon.plist
+    2. Replace every /ABSOLUTE/PATH/TO/YACA with this repo's absolute path
+    3. Replace /ABSOLUTE/PATH/TO/HOME with your $HOME
+    4. launchctl load ~/Library/LaunchAgents/com.yaca.daemon.plist
+    5. launchctl start com.yaca.daemon
+
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.yaca.daemon.plist
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.yaca.daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/node</string>
+        <string>/ABSOLUTE/PATH/TO/YACA/src/daemon.cjs</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/ABSOLUTE/PATH/TO/YACA</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>YACA_STATE_DIR</key>
+        <string>/ABSOLUTE/PATH/TO/HOME/.yaca</string>
+        <key>LANG</key>
+        <string>en_US.UTF-8</string>
+        <key>LC_ALL</key>
+        <string>en_US.UTF-8</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/ABSOLUTE/PATH/TO/HOME/.yaca/daemon.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/ABSOLUTE/PATH/TO/HOME/.yaca/daemon.stderr.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>
