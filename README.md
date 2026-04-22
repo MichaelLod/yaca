@@ -1,4 +1,4 @@
-# YACA — Yet Another Cloud Agent
+# YACA — Yet Another Claude Agent
 
 Minimal, WhatsApp-first Claude Code agent. One WhatsApp number, your laptop, file-based memory, and the full Google stack via `gog`. Clone → install → pair → done.
 
