@@ -699,7 +699,7 @@ async function handleInbound(msg, jid, participant, fromOrchestrator = false) {
   // active session unless the user quote-replied a previous outbound.
   let voiceTranscript = null;
   let voiceError = null;
-  if (media?.type === "audio") {
+  if (media?.type === "audio" && !fromOrchestrator) {
     try {
       const buf = await downloadMediaMessage(msg, "buffer", {}, { logger, reuploadRequest: sock.updateMediaMessage });
       voiceTranscript = await transcribeAudio(buf, media.mimetype);
@@ -1162,11 +1162,19 @@ end tell`;
   // from the command path so we never loop on a failed-to-match !text.
   if (!targets.length && !fromOrchestrator) {
     try {
+      let projects = [];
+      try {
+        projects = fs.readdirSync(WORK_ROOT, { withFileTypes: true })
+          .filter((d) => d.isDirectory() && !d.name.startsWith("."))
+          .map((d) => d.name).sort();
+      } catch {}
       const decision = await orchestrator.classify({
         text: content,
         sessions,
         lastActiveId: activeSessionId,
         jid,
+        projects,
+        workRoot: WORK_ROOT,
       });
       if (decision.action === "answer") {
         const replyText = `[YACA] ${decision.reply}`;

@@ -56,7 +56,7 @@ function renderRecent(jid, sessionList) {
   }).join("\n");
 }
 
-async function classify({ text, sessions, lastActiveId, jid }) {
+async function classify({ text, sessions, lastActiveId, jid, projects = [], workRoot = "~/Work" }) {
   if (!process.env.OPENAI_API_KEY) {
     return lastActiveId
       ? { action: "route", target_session_id: lastActiveId, clean: text }
@@ -84,6 +84,9 @@ async function classify({ text, sessions, lastActiveId, jid }) {
     sessionList.length
       ? sessionList.map((s) => `  ${s.number ?? "?"}. [${s.tag}]  ${s.cwd}`).join("\n")
       : "  (none open)",
+    "",
+    `Available project folders in ${workRoot} (use these exact names when invoking !spawn / !new):`,
+    projects.length ? "  " + projects.join(", ") : "  (none)",
     "",
     "Recent dialogue in this chat (most recent last):",
     recent,
