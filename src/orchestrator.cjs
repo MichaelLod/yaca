@@ -36,11 +36,11 @@ function snapshot(jid) {
 }
 
 function buildSessionList(sessions) {
-  return [...sessions.values()].map((s) => ({
+  return [...sessions.entries()].map(([session_id, s]) => ({
     number: s.number,
     tag: s.tag,
     cwd: s.cwd,
-    session_id: s.session_id,
+    session_id,
   }));
 }
 
