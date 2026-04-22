@@ -684,7 +684,7 @@ function broadcastConnectionStatus(connected) {
 
 // ── Inbound routing ─────────────────────────────────────────────────
 
-async function handleInbound(msg, jid, participant) {
+async function handleInbound(msg, jid, participant, fromOrchestrator = false) {
   const message = msg.message;
   let text = extractText(message);
   const media = extractMediaInfo(message);
@@ -1157,9 +1157,10 @@ end tell`;
   }
 
   // No explicit prefix matched — let the orchestrator decide. The classifier
-  // can either route to a specific terminal (overriding sticky active) or
-  // answer the message itself as YACA. Falls through to active on error.
-  if (!targets.length) {
+  // can route to a specific terminal, answer itself as YACA, or invoke a
+  // daemon command on behalf of the user. Skipped on a recursive re-entry
+  // from the command path so we never loop on a failed-to-match !text.
+  if (!targets.length && !fromOrchestrator) {
     try {
       const decision = await orchestrator.classify({
         text: content,
@@ -1180,6 +1181,13 @@ end tell`;
         dailyLog.appendOutbound({ root: STATE_DIR, chat_id: jid, tag: "YACA", text: decision.reply, message_id: sentId });
         log(`YACA self-answered: ${decision.reply.slice(0, 60)}`);
         return;
+      }
+      if (decision.action === "command") {
+        log(`YACA → command: ${decision.text}`);
+        orchestrator.record(jid, { dir: "in", text: content });
+        orchestrator.record(jid, { dir: "out", session_id: "yaca", text: `(executing ${decision.text})` });
+        const fakeMsg = { ...msg, message: { ...msg.message, conversation: decision.text, extendedTextMessage: undefined } };
+        return await handleInbound(fakeMsg, jid, participant, true);
       }
       if (decision.action === "route" && decision.target_session_id && sessions.has(decision.target_session_id)) {
         targets = [decision.target_session_id];
